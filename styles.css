@@ -1,0 +1,222 @@
+/* Define shared properties using CSS variables */
+:root {
+    /* Font settings MUST be respected by Shiki's output for alignment */
+    --code-font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --code-font-size: 1em;
+    --code-line-height: 1.5;
+    --code-padding: 1em; /* Padding for the container around Shiki's pre */
+    --code-tab-size: 2;
+    --code-white-space: pre-wrap;
+    --code-word-wrap: break-word;
+    --container-border: 1px solid #dee2e6;
+    --container-radius: 0.25rem;
+    --container-max-width: 900px;
+    --container-width: 80%;
+    /* Theme background/color will come from Shiki */
+    --diff-highlight-color: rgba(255, 255, 0, 0.5); /* Yellow flash */
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-color: #FFFFFF;
+    color: #212529;
+    /* Improve rendering consistency */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+h1, h2 {
+    color: #343a40;
+}
+
+/* Shared container styles */
+.code-container {
+    border: var(--container-border);
+    border-radius: var(--container-radius);
+    margin-bottom: 1.5rem;
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: relative; /* Needed for absolute positioning inside */
+    overflow: hidden; /* Clip contents like textarea scrollbars if needed */
+    /* Padding applied here now, around the Shiki <pre> */
+     padding: var(--code-padding);
+     /* Background should come from Shiki */
+     background-color: #282c34; /* Default fallback background */
+     transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out; /* For flash effect */
+}
+
+/* Style Shiki's generated <pre> element */
+.code-container pre.shiki {
+     margin: 0 !important; /* Override default margins */
+     padding: 0 !important; /* Our container has padding */
+     background-color: transparent !important; /* Use container background */
+     border-radius: inherit;
+     font-size: var(--code-font-size) !important; /* Enforce font size */
+     font-family: var(--code-font-family) !important; /* Enforce font family */
+     line-height: var(--code-line-height) !important; /* Enforce line height */
+     white-space: var(--code-white-space) !important; /* Enforce wrapping */
+     word-wrap: var(--code-word-wrap) !important; /* Enforce wrapping */
+     tab-size: var(--code-tab-size) !important;
+     overflow: visible; /* Scrolling handled by textarea/sync */
+     min-height: 5em;
+}
+ /* Style Shiki's generated <code> element */
+ .code-container pre.shiki code {
+     display: block;
+     font-family: inherit !important;
+     font-size: inherit !important;
+     line-height: inherit !important;
+     white-space: inherit !important;
+     word-wrap: inherit !important;
+     tab-size: inherit !important;
+      /* Padding comes from container */
+     padding: 0 !important;
+ }
+
+
+/* Element to HOLD the Shiki output */
+.shiki-output-holder {
+     position: relative; /* Child textarea is absolute */
+     z-index: 1;
+     border-radius: inherit;
+     overflow: hidden; /* Clip if necessary */
+     min-height: 5em; /* Match code block */
+     /* Background/color set by Shiki */
+}
+
+
+/* Make the actual textarea invisible but functional */
+#typing-area {
+    /* Positioning & Sizing */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+
+    /* Appearance (Invisible) */
+    background-color: transparent;
+    color: transparent;
+    /* Caret color should match the theme's default text color */
+    caret-color: #abb2bf; /* Example for github-dark */
+    border: none;
+    outline: none;
+    resize: none;
+    overflow: auto; /* Needs to scroll */
+
+    /* === CRITICAL: Font & Layout Matching === */
+     /* Padding MUST match the container's padding now */
+    padding: var(--code-padding);
+    font-family: var(--code-font-family);
+    font-size: var(--code-font-size);
+    line-height: var(--code-line-height);
+    white-space: var(--code-white-space);
+    word-wrap: var(--code-word-wrap);
+    tab-size: var(--code-tab-size);
+    letter-spacing: inherit;
+    word-spacing: inherit;
+    text-rendering: optimizeSpeed;
+
+     /* Layering */
+    z-index: 2;
+}
+
+
+#typing-area:focus {
+    box-shadow: none;
+}
+#error-message {
+    color: red;
+    margin-top: 10px;
+    font-weight: bold;
+    font-family: monospace;
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    text-align: left;
+    min-height: 1.2em; /* Reserve space */
+    transition: color 0.3s ease;
+}
+#error-message.success {
+     color: green; /* Style for success message */
+}
+
+/* Add styles for error state if needed */
+.code-container.error-state {
+     border-color: red;
+}
+.code-container.error-state pre.shiki {
+     opacity: 0.6;
+}
+
+/* Style for the temporary character flash overlay */
+.char-flash-overlay {
+    position: absolute;
+    background-color: rgba(255, 255, 0, 0.6); /* Semi-transparent yellow */
+    border-radius: 2px;
+    z-index: 1; /* Below textarea (z-index 2), above Shiki output (z-index 0 implicitly) */
+    pointer-events: none; /* Don't interfere with mouse */
+    transition: opacity 0.5s ease-out; /* Fade out effect */
+    box-shadow: 0 0 5px rgba(255, 255, 0, 0.7);
+}
+
+/* View Container Styles */
+.view {
+    display: none; /* Hidden by default */
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Specific View Styles (optional adjustments) */
+#home-view {
+    text-align: center;
+    padding-top: 50px;
+}
+#home-view h1 {
+    margin-bottom: 40px;
+}
+#upload-button-home { /* Style the home upload button */
+     padding: 20px 40px;
+     font-size: 1.2em;
+     cursor: pointer;
+     /* Add background image if you have upload.png */
+     /* background: url('upload.png') no-repeat left center; */
+     /* background-size: 30px; */
+     /* padding-left: 50px; */ /* Adjust padding if using image */
+}
+
+#result-view {
+    padding: 40px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+}
+#result-view h2 {
+    margin-bottom: 20px;
+}
+#result-stats {
+    font-size: 1.1em;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+#result-buttons button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+
+/* Ensure elements inside typing view are centered */
+ #typing-view > * {
+     /* Already centered by body flex, but explicitly set if needed */
+ }
