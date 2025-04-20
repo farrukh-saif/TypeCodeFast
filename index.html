@@ -3,9 +3,587 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TypeCodeFast</title>
+    <title>TypeCodeFast</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <!-- Prettier remains -->
+    <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.8/parser-babel.js"></script>
+
+    <style>
+        /* Define shared properties using CSS variables */
+        :root {
+            /* Font settings MUST be respected by Shiki's output for alignment */
+            --code-font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --code-font-size: 0.95em;
+            --code-line-height: 1.5;
+            --code-padding: 1em; /* Padding for the container around Shiki's pre */
+            --code-tab-size: 2;
+            --code-white-space: pre-wrap;
+            --code-word-wrap: break-word;
+            --container-border: 1px solid #dee2e6;
+            --container-radius: 0.25rem;
+            --container-max-width: 900px;
+            --container-width: 80%;
+            /* Theme background/color will come from Shiki */
+            --diff-highlight-color: rgba(255, 255, 0, 0.5); /* Yellow flash */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #212529;
+            /* Improve rendering consistency */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        h1, h2 {
+            color: #343a40;
+        }
+
+        /* Shared container styles */
+        .code-container {
+            border: var(--container-border);
+            border-radius: var(--container-radius);
+            margin-bottom: 1.5rem;
+            width: var(--container-width);
+            max-width: var(--container-max-width);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative; /* Needed for absolute positioning inside */
+            overflow: hidden; /* Clip contents like textarea scrollbars if needed */
+            /* Padding applied here now, around the Shiki <pre> */
+             padding: var(--code-padding);
+             /* Background should come from Shiki */
+             background-color: #282c34; /* Default fallback background */
+             transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out; /* For flash effect */
+        }
+
+        /* Style Shiki's generated <pre> element */
+        .code-container pre.shiki {
+             margin: 0 !important; /* Override default margins */
+             padding: 0 !important; /* Our container has padding */
+             background-color: transparent !important; /* Use container background */
+             border-radius: inherit;
+             font-size: var(--code-font-size) !important; /* Enforce font size */
+             font-family: var(--code-font-family) !important; /* Enforce font family */
+             line-height: var(--code-line-height) !important; /* Enforce line height */
+             white-space: var(--code-white-space) !important; /* Enforce wrapping */
+             word-wrap: var(--code-word-wrap) !important; /* Enforce wrapping */
+             tab-size: var(--code-tab-size) !important;
+             overflow: visible; /* Scrolling handled by textarea/sync */
+             min-height: 5em;
+        }
+         /* Style Shiki's generated <code> element */
+         .code-container pre.shiki code {
+             display: block;
+             font-family: inherit !important;
+             font-size: inherit !important;
+             line-height: inherit !important;
+             white-space: inherit !important;
+             word-wrap: inherit !important;
+             tab-size: inherit !important;
+              /* Padding comes from container */
+             padding: 0 !important;
+         }
+
+
+        /* Element to HOLD the Shiki output */
+        .shiki-output-holder {
+             position: relative; /* Child textarea is absolute */
+             z-index: 1;
+             border-radius: inherit;
+             overflow: hidden; /* Clip if necessary */
+             min-height: 5em; /* Match code block */
+             /* Background/color set by Shiki */
+        }
+
+
+        /* Make the actual textarea invisible but functional */
+        #typing-area {
+            /* Positioning & Sizing */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+
+            /* Appearance (Invisible) */
+            background-color: transparent;
+            color: transparent;
+            /* Caret color should match the theme's default text color */
+            caret-color: #abb2bf; /* Example for github-dark */
+            border: none;
+            outline: none;
+            resize: none;
+            overflow: auto; /* Needs to scroll */
+
+            /* === CRITICAL: Font & Layout Matching === */
+             /* Padding MUST match the container's padding now */
+            padding: var(--code-padding);
+            font-family: var(--code-font-family);
+            font-size: var(--code-font-size);
+            line-height: var(--code-line-height);
+            white-space: var(--code-white-space);
+            word-wrap: var(--code-word-wrap);
+            tab-size: var(--code-tab-size);
+            letter-spacing: inherit;
+            word-spacing: inherit;
+            text-rendering: optimizeSpeed;
+
+             /* Layering */
+            z-index: 2;
+        }
+
+
+        #typing-area:focus {
+            box-shadow: none;
+        }
+        #error-message {
+            color: red;
+            margin-top: 10px;
+            font-weight: bold;
+            font-family: monospace;
+            width: var(--container-width);
+            max-width: var(--container-max-width);
+            text-align: left;
+            min-height: 1.2em; /* Reserve space */
+            transition: color 0.3s ease;
+        }
+        #error-message.success {
+             color: green; /* Style for success message */
+        }
+
+        /* Add styles for error state if needed */
+        .code-container.error-state {
+             border-color: red;
+        }
+        .code-container.error-state pre.shiki {
+             opacity: 0.6;
+        }
+
+        /* Style for the temporary character flash overlay */
+        .char-flash-overlay {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.6); /* Semi-transparent yellow */
+            border-radius: 2px;
+            z-index: 1; /* Below textarea (z-index 2), above Shiki output (z-index 0 implicitly) */
+            pointer-events: none; /* Don't interfere with mouse */
+            transition: opacity 0.5s ease-out; /* Fade out effect */
+            box-shadow: 0 0 5px rgba(255, 255, 0, 0.7);
+        }
+
+    </style>
     </head>
     <body>
-        <h1 style="text-align: center;">TypeCodeFast</h1>
+
+    <h1>TypeCodeFast Practice</h1>
+
+    <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; width: var(--container-width); max-width: var(--container-max-width);">
+        <button id="upload-button">Upload JS File</button>
+        <input type="file" id="file-input" accept=".js, text/javascript" style="display: none;">
+        <button id="diff-button" title="Highlight first difference">Check Diff</button>
+        <span id="file-info" style="margin-left: 10px; font-style: italic; color: #555; flex-grow: 1; text-align: right;"></span>
+    </div>
+
+    <!-- Container for the code snippet -->
+    <div id="code-snippet-container" class="code-container">
+        <h2>Code Snippet to Type:</h2>
+        <!-- Shiki output will go inside here -->
+        <div id="snippet-output" class="shiki-output-holder">
+             <!-- Shiki generates <pre><code>...</code></pre> here -->
+             <pre class="shiki" style="background-color: #282c34;"><code>Loading snippet...</code></pre>
+        </div>
+    </div>
+
+    <!-- Container for the user input area -->
+    <div id="highlighted-input-container" class="code-container">
+         <!-- Shiki output holder -->
+         <div id="input-output" class="shiki-output-holder">
+             <!-- Shiki generates <pre><code>...</code></pre> here -->
+             <pre class="shiki" style="background-color: #282c34;"><code></code></pre>
+         </div>
+         <!-- Invisible textarea -->
+        <textarea id="typing-area" placeholder="" spellcheck="false" autocapitalize="none" autocomplete="off" autocorrect="off" disabled></textarea>
+         <!-- Character flash overlays will be added here temporarily -->
+    </div>
+
+
+    <div id="error-message"></div>
+
+    <!-- Script type is now module -->
+    <script type="module">
+        // Import Shiki's codeToHtml
+        import { codeToHtml } from 'https://esm.sh/shiki@1.3.0'; // Using version 1.3.0
+
+        // --- Configuration ---
+        const MAX_SNIPPET_LINES = 15;
+        const CHARS_PER_WORD = 5;
+        const SHIKI_THEME = 'github-dark'; // Choose your theme
+        const SHIKI_LANG = 'javascript'; // Default language
+
+        const defaultOriginalCode = `
+function calculateSum(arr) {
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) {
+    if (typeof arr[i] === 'number') {
+      sum += arr[i];
+    } else {
+      // console.warn(\`Skipping non-numeric value: \${arr[i]}\`);
+    }
+  }
+  return sum;
+}`;
+        let formattedCode = ''; // Plain text version for comparison
+
+        // --- Timer State ---
+        let startTime = null;
+        let timerRunning = false;
+
+        // --- DOM References ---
+        // Get the divs that will contain Shiki's output
+        const snippetOutputHolder = document.getElementById('snippet-output');
+        const inputOutputHolder = document.getElementById('input-output');
+        // Other elements
+        const typingAreaElement = document.getElementById('typing-area');
+        const errorMessageElement = document.getElementById('error-message');
+        const uploadButton = document.getElementById('upload-button');
+        const fileInput = document.getElementById('file-input');
+        const fileInfoSpan = document.getElementById('file-info');
+        const highlightedInputContainer = document.getElementById('highlighted-input-container');
+        const diffButton = document.getElementById('diff-button');
+
+        // --- Utility: Get Character Metrics (Approximate) ---
+        let charWidth = null;
+        let lineHeight = null;
+        function measureCharMetrics() {
+            const styles = getComputedStyle(typingAreaElement);
+            lineHeight = parseFloat(styles.lineHeight);
+            // Estimate character width (monospace assumption)
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            context.font = `${styles.fontSize} ${styles.fontFamily}`;
+            charWidth = context.measureText("M").width; // Measure a common wide character
+            // Fallback if measurement fails
+            if (!charWidth || charWidth === 0) charWidth = parseFloat(styles.fontSize) * 0.6;
+            if (!lineHeight || isNaN(lineHeight)) lineHeight = parseFloat(styles.fontSize) * 1.5;
+        }
+
+        // --- Utility: Calculate Character Position ---
+        function getCharacterPosition(index) {
+            if (charWidth === null) measureCharMetrics(); // Measure once if needed
+
+            const textBeforeIndex = typingAreaElement.value.substring(0, index);
+            const lines = textBeforeIndex.split('\n');
+            const lineIndex = lines.length - 1;
+            const charIndexInLine = lines[lineIndex].length;
+
+            const styles = getComputedStyle(typingAreaElement);
+            const paddingTop = parseFloat(styles.paddingTop);
+            const paddingLeft = parseFloat(styles.paddingLeft);
+
+            // Calculate position relative to the textarea's top-left corner
+            const top = (lineIndex * lineHeight) + paddingTop - typingAreaElement.scrollTop;
+            const left = (charIndexInLine * charWidth) + paddingLeft - typingAreaElement.scrollLeft;
+
+            return { top, left };
+        }
+
+        // --- Core Function: Format and Display Snippet ---
+        // Function is now async
+        async function displaySnippet(codeToFormat, sourceFileName = "Default Snippet") {
+             errorMessageElement.textContent = '';
+             errorMessageElement.classList.remove('success');
+             fileInfoSpan.textContent = `Using: ${sourceFileName}`;
+             snippetOutputHolder.innerHTML = `<pre class="shiki" style="background-color: #282c34;"><code>Formatting and highlighting...</code></pre>`; // Placeholder
+
+             try {
+                // Format with Prettier first
+                const fullFormattedCode = prettier.format(codeToFormat, {
+                    parser: "babel", plugins: prettierPlugins, tabWidth: 2
+                }).trim();
+                const lines = fullFormattedCode.split('\n');
+                // Store the plain text for comparison
+                formattedCode = lines.slice(0, MAX_SNIPPET_LINES).join('\n');
+
+                // Highlight using Shiki
+                const highlightedHtml = await codeToHtml(formattedCode, {
+                    lang: SHIKI_LANG,
+                    theme: SHIKI_THEME
+                });
+                // Place the highlighted HTML into the holder div
+                snippetOutputHolder.innerHTML = highlightedHtml;
+
+                 // Apply container styles if needed (e.g., remove error state)
+                 snippetOutputHolder.closest('.code-container')?.classList.remove('error-state');
+
+                await resetInputArea(); // Reset input area (also async)
+
+             } catch (error) {
+                console.error("Formatting/Display error:", error);
+                const errorMsg = `Error processing ${sourceFileName}: ${error.message}`;
+                snippetOutputHolder.innerHTML = `<pre class="shiki" style="color: red; background-color: #ffebeb;"><code>${errorMsg}</code></pre>`;
+                snippetOutputHolder.closest('.code-container')?.classList.add('error-state');
+                errorMessageElement.textContent = errorMsg;
+                errorMessageElement.classList.remove('success');
+                typingAreaElement.disabled = true;
+                formattedCode = '';
+                 timerRunning = false;
+                 startTime = null;
+             }
+        }
+
+        // --- Helper: Reset User Input Area ---
+        // Function is now async
+        async function resetInputArea() {
+             typingAreaElement.value = '';
+             errorMessageElement.textContent = '';
+             errorMessageElement.classList.remove('success');
+
+             // Generate highlighted HTML for an empty string to apply theme background
+             const emptyHighlightedHtml = await codeToHtml('', {
+                 lang: SHIKI_LANG,
+                 theme: SHIKI_THEME
+             });
+             inputOutputHolder.innerHTML = emptyHighlightedHtml;
+
+             // Reset scroll positions
+             typingAreaElement.scrollTop = 0;
+             typingAreaElement.scrollLeft = 0;
+             // Scroll the shiki output div itself if needed (might not be necessary if textarea matches size)
+             const shikiPre = inputOutputHolder.querySelector('pre.shiki');
+             if (shikiPre) {
+                 shikiPre.scrollTop = 0;
+                 shikiPre.scrollLeft = 0;
+             }
+
+             // Reset Timer State
+             startTime = null;
+             timerRunning = false;
+
+             typingAreaElement.disabled = false;
+             typingAreaElement.focus();
+
+             // Remove completion outline if present
+             highlightedInputContainer.style.outline = 'none';
+             // Remove any leftover flash elements on reset
+             document.querySelectorAll('.char-flash-overlay').forEach(el => el.remove());
+             inputOutputHolder.closest('.code-container')?.classList.remove('error-state');
+        }
+
+
+        // --- Event Listeners ---
+
+        uploadButton.addEventListener('click', () => fileInput.click());
+
+        // File input listener remains largely the same, calls async displaySnippet
+        fileInput.addEventListener('change', (event) => {
+             const file = event.target.files[0];
+            if (!file) {
+                fileInfoSpan.textContent = 'No file selected.';
+                return;
+            }
+            if (!file.name.toLowerCase().endsWith('.js')) {
+                 errorMessageElement.textContent = 'Please select a JavaScript (.js) file.';
+                 fileInfoSpan.textContent = '';
+                 fileInput.value = '';
+                 return;
+            }
+            fileInfoSpan.textContent = `Reading ${file.name}...`;
+            errorMessageElement.textContent = '';
+            errorMessageElement.classList.remove('success');
+            const reader = new FileReader();
+            reader.onload = async (e) => { // Make onload async
+                await displaySnippet(e.target.result, file.name); // Await display
+                fileInput.value = '';
+            };
+            reader.onerror = (e) => {
+                console.error("File reading error:", e);
+                errorMessageElement.textContent = `Error reading file: ${file.name}`;
+                fileInfoSpan.textContent = '';
+                fileInput.value = '';
+                typingAreaElement.disabled = true;
+            };
+            reader.readAsText(file);
+        });
+
+        // Diff Button Listener
+        diffButton.addEventListener('click', checkDifference);
+
+        // Input listener is now async
+        typingAreaElement.addEventListener('input', async () => {
+            const typedText = typingAreaElement.value;
+
+            // --- Start Timer ---
+            if (!timerRunning && typedText.length > 0) {
+                startTime = Date.now();
+                timerRunning = true;
+                console.log("Timer started!");
+                errorMessageElement.textContent = '';
+                errorMessageElement.classList.remove('success');
+                 // Remove flash overlay if user starts typing again
+                 document.querySelectorAll('.char-flash-overlay').forEach(el => el.remove());
+            }
+            // ------------------
+
+            // --- Highlighting ---
+            try {
+                 // Highlight typed text with Shiki
+                 const highlightedHtml = await codeToHtml(typedText, {
+                     lang: SHIKI_LANG,
+                     theme: SHIKI_THEME
+                 });
+                 // Update the innerHTML of the holder
+                 inputOutputHolder.innerHTML = highlightedHtml;
+
+            } catch (error) {
+                 console.error("Shiki error during input:", error);
+                 // Fallback: display plain text inside a basic pre/code
+                 inputOutputHolder.innerHTML = `<pre class="shiki" style="background-color: #282c34;"><code>${typedText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>`;
+            }
+            // ------------------
+
+            // --- Check for Completion ---
+            if (timerRunning && typedText === formattedCode) {
+                const endTime = Date.now();
+                const durationSeconds = (endTime - startTime) / 1000;
+                const durationMinutes = durationSeconds / 60;
+
+                if (durationMinutes > 0) {
+                    const wordCount = formattedCode.length / CHARS_PER_WORD;
+                    const wpm = Math.round(wordCount / durationMinutes);
+                    timerRunning = false; startTime = null;
+                    console.log(`Completed in ${durationSeconds.toFixed(2)}s, WPM: ${wpm}`);
+                    alert(`Complete!\n\nTime: ${durationSeconds.toFixed(2)} seconds\nWPM: ${wpm}`);
+                    highlightedInputContainer.style.outline = '2px solid limegreen';
+                } else {
+                    alert(`Complete!\n\nTime: ${durationSeconds.toFixed(2)} seconds\n(Time too short to calculate accurate WPM)`);
+                    timerRunning = false; startTime = null;
+                    highlightedInputContainer.style.outline = '2px solid limegreen';
+                }
+            } else if (timerRunning) {
+                highlightedInputContainer.style.outline = 'none';
+            }
+            // -------------------------
+        });
+
+         // Scroll Synchronization - Target the Shiki <pre> inside the holder
+         typingAreaElement.addEventListener('scroll', () => {
+             const shikiPre = inputOutputHolder.querySelector('pre.shiki');
+             if (shikiPre) {
+                shikiPre.scrollTop = typingAreaElement.scrollTop;
+                shikiPre.scrollLeft = typingAreaElement.scrollLeft;
+             }
+         });
+
+
+        // Indentation on Tab - Needs to trigger async input handler
+        typingAreaElement.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = typingAreaElement.selectionStart;
+                const end = typingAreaElement.selectionEnd;
+                const indent = ' '.repeat(parseInt(getComputedStyle(typingAreaElement).tabSize) || 2);
+                const currentValue = typingAreaElement.value;
+                typingAreaElement.value = currentValue.substring(0, start) + indent + currentValue.substring(end);
+                typingAreaElement.selectionStart = typingAreaElement.selectionEnd = start + indent.length;
+                // Dispatch input event to trigger highlighting/timer logic
+                typingAreaElement.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+
+        typingAreaElement.addEventListener('paste', (e) => {
+            e.preventDefault();
+            console.warn("Paste event prevented.");
+            // If allowing paste, remember to dispatch input event
+        });
+
+        // --- Diff Check Function ---
+        function checkDifference() {
+            // Clear previous messages and overlays first
+            errorMessageElement.textContent = '';
+            errorMessageElement.classList.remove('success');
+            document.querySelectorAll('.char-flash-overlay').forEach(el => el.remove());
+
+            const typedText = typingAreaElement.value;
+            let diffIndex = -1;
+            const len = Math.min(typedText.length, formattedCode.length);
+
+            for (let i = 0; i < len; i++) {
+                if (typedText[i] !== formattedCode[i]) {
+                    diffIndex = i;
+                    break;
+                }
+            }
+
+            // If no difference found yet, but lengths differ, the diff is at the end of the shorter string
+            if (diffIndex === -1 && typedText.length !== formattedCode.length) {
+                diffIndex = len;
+            }
+
+            if (diffIndex !== -1) {
+                // Set cursor position
+                typingAreaElement.selectionStart = diffIndex;
+                typingAreaElement.selectionEnd = diffIndex;
+                typingAreaElement.focus(); // Ensure textarea is focused to scroll caret into view
+
+                try {
+                    // Calculate position
+                    const pos = getCharacterPosition(diffIndex);
+
+                    // Create flash overlay
+                    const flashElement = document.createElement('div');
+                    flashElement.className = 'char-flash-overlay';
+                     // Set size based on calculated metrics (adjust as needed)
+                     flashElement.style.width = `${charWidth || 8}px`;
+                     flashElement.style.height = `${lineHeight || 18}px`;
+                     flashElement.style.top = `${pos.top}px`;
+                     flashElement.style.left = `${pos.left}px`;
+
+                    // Append to the container that holds the textarea overlay
+                    highlightedInputContainer.appendChild(flashElement);
+
+                    // Fade out and remove
+                    setTimeout(() => {
+                        flashElement.style.opacity = '0';
+                        setTimeout(() => flashElement.remove(), 500); // Remove after fade
+                    }, 500); // Start fade after 0.5s
+
+                } catch (calcError) {
+                     console.error("Could not calculate character position for flash:", calcError);
+                     // Fallback: Briefly show text message if calculation fails
+                     errorMessageElement.textContent = `Difference found near index ${diffIndex}.`;
+                     setTimeout(() => { errorMessageElement.textContent = ''; }, 1500);
+                }
+
+            } else {
+                // Keep success message for clarity when there's no difference
+                errorMessageElement.textContent = 'No difference found!';
+                errorMessageElement.classList.add('success'); // Use green color
+                typingAreaElement.focus(); // Focus just in case
+            }
+        }
+
+        // --- Initial Load ---
+        // Listener is now async
+        document.addEventListener('DOMContentLoaded', async () => {
+             // Check for prettier globally, Shiki is imported via module
+             if (typeof prettier !== 'undefined') {
+                 measureCharMetrics(); // Measure metrics once on load
+                 // Use await for the initial display
+                 await displaySnippet(defaultOriginalCode);
+             } else {
+                 console.error("Prettier not loaded!");
+                 errorMessageElement.textContent = "Error loading essential libraries.";
+                 typingAreaElement.disabled = true;
+                 snippetOutputHolder.innerHTML = `<pre><code>Error loading libraries.</code></pre>`;
+             }
+        });
+
+    </script>
+
     </body>
 </html>
