@@ -1,5 +1,4 @@
 import { codeToHtml } from 'https://esm.sh/shiki@1.3.0';
-import { inject } from '@vercel/analytics';
 
 // --- Configuration & State ---
 const MAX_SNIPPET_LINES = 10;
@@ -383,7 +382,6 @@ window.addEventListener('keydown', (e) => {
 
 // --- Initial Load ---
 document.addEventListener('DOMContentLoaded', async () => {
-    inject();
     if (typeof prettier !== 'undefined') {
         measureCharMetrics(); // Measure metrics once
         // Show home view initially
