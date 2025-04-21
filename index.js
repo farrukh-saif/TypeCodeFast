@@ -45,6 +45,7 @@ function showView(viewId) {
     });
 }
 
+
 // --- Utility: Measure Chars ---
 function measureCharMetrics() {
     const styles = getComputedStyle(typingAreaElement);
@@ -163,10 +164,10 @@ function displayResults() {
 // --- Event Listeners ---
 
 randomButtonHome.addEventListener('click', async () => {
-    currentCodeToFormat = `let a = 1;
-let b = 2;
-let c = a + b;
-console.log(c);`;
+    currentCodeToFormat = `let a = 1;`
+// let b = 2;
+// let c = a + b;
+// console.log(c);`;
     currentLanguage = "javascript";
     showView('typing-view');
     await displaySnippet(currentCodeToFormat);

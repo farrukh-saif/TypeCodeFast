@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/parser-babel.js"></script>
 
+
     <link rel="stylesheet" href="styles.css">
     </head>
     <body>
@@ -18,24 +19,65 @@
     <!-- Home View -->
     <div id="home-view" class="view">
         <h1>TypeCodeFast</h1>
+        <div style="height: 100px;"></div>
+
         <div style="display: flex; justify-content: center; gap: 10px;">
-            <button id="random-button-home" style="background: url('random.png') no-repeat center; background-size: contain; width: 600px; height: 83px; cursor: pointer; text-indent: -9999px; overflow: hidden; border: none; outline: none; padding: 0; margin: 0;"></button>
-            <button id="upload-button-home" style="background: url('upload.png') no-repeat center; background-size: contain; width: 600px; height: 80px; cursor: pointer; text-indent: -9999px; overflow: hidden; border: none; outline: none; padding: 0; margin: 0;"></button>
-            <!-- <p style="margin-top: 20px; color: #666;">(Upload a .js file to start)</p> -->
+            <button class="custom-button" id="random-button-home">
+                <img src="dice.svg" class="icon" alt="icon">
+                <span class="text">Random</span>
+            </button>
+            <div class="spacing-div"></div>
+            <button class="custom-button" id="upload-button-home">
+                <img src="code.svg" class="icon" alt="icon">
+                <span class="text">Upload</span>
+            </button>
+            <style>
+                @media (max-width: 600px) {
+                    .spacing-div {
+                        display: none;
+                    }
+                }
+                @media (min-width: 601px) {
+                    .spacing-div {
+                        width: 50px;
+                    }
+                }
+            </style>
         </div>
+        
+        <div style="height: 100px;"></div>
         <input type="file" id="file-input-home" accept=".js, .py, text/javascript, text/python" style="display: none;">
 
-        <img src="snap.png" alt="Snap" style="width: 100%; height: auto; user-drag: none; -webkit-user-drag: none;" ondragstart="return false;">
+        <div class="mac-window">
+            <div class="top-bar">
+              <div class="circles">
+                <div class="circle red"></div>
+                <div class="circle orange"></div>
+                <div class="circle green"></div>
+              </div>
+            </div>
+            <div class="content">
+              <p><code style="color: #717d8a">// We've all taken typing tests, but they never quite match the real needs of developers.</code></p>
+              <p><code style="color: #717d8a">// TypeCodeFast is a typing test for the developers, by the developers.</code></p>
+            </div>
+          </div>
+        </div>
          <!-- Add language selection later if needed -->
     </div>
 
     <!-- Typing View -->
     <div id="typing-view" class="view">
+        <h1>TypeCodeFast</h1>
+        <div style="height: 30px;"></div>
         <!-- Moved existing content here -->
         <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; width: var(--container-width); max-width: var(--container-max-width);">
             <!-- Buttons specific to typing view can go here if needed, or remove this bar -->
              <!-- go back to home -->
-             <button id="back-button" title="Go back to home" style="background: url('upload.png') no-repeat center; background-size: contain; width: 300px; height: 60px; cursor: pointer; text-indent: -9999px; overflow: hidden; border: none; outline: none; padding: 0; margin: 0;"></button>
+
+             <button class="custom-button" style="background-color: #3d946a; height: 60px; width: 150px; border-color: #006835;" id="back-button" title="Go back to home">
+                <img src="home.svg" class="icon" alt="icon" style="filter: invert(1); width: 30px; height: 30px;">
+                <span class="text" style="color: #f9fbf7; font-size: 25px;">Home</span>
+              </button>
             <button id="diff-button" title="Highlight first difference" style="background: url('check_diff.png') no-repeat center; background-size: contain; width: 300px; height: 60px; cursor: pointer; text-indent: -9999px; overflow: hidden; border: none; outline: none; padding: 0; margin: 0;"></button>
             <span id="file-info" style="margin-left: 10px; font-style: italic; color: #555; flex-grow: 1; text-align: right;"></span>
         </div>
@@ -60,14 +102,35 @@
 
     <!-- Result View -->
     <div id="result-view" class="view">
-        <h2>Results</h2>
-        <div id="result-stats">
-            <p>Time: <span id="result-time">--</span> seconds</p>
-            <p>WPM: <span id="result-wpm">--</span></p>
-        </div>
-        <div id="result-buttons">
-            <button id="redo-button">Redo Same Snippet</button>
-            <button id="new-snippet-button">Upload New Snippet</button>
+        <h1>TypeCodeFast</h1>
+        <div style="height: 30px;"></div>
+        <div class="mac-window">
+            <div class="top-bar">
+              <div class="circles">
+                <div class="circle red"></div>
+                <div class="circle orange"></div>
+                <div class="circle green"></div>
+              </div>
+            </div>
+            <div class="content">
+                <div id="result-stats">
+                    <p style="font-size: 40px; text-align: center;">WPM: <span id="result-wpm">--</span></p>
+                    <p style="font-size: 40px; text-align: center;">Time: <span id="result-time">--</span> seconds</p>
+                    <p style="font-size: 40px; text-align: center;">Womp Womp</p>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 20px;">
+                    <button class="custom-button" id="new-snippet-button" style="width: 200px; height: 70px;">
+                        <img src="home.svg" class="icon" alt="icon">
+                        <span class="text">Home</span>
+                    </button>
+                    <button class="custom-button" id="redo-button" style="width: 200px; height: 70px;">
+                        <img src="repeat.svg" class="icon" alt="icon">
+                        <span class="text">Redo</span>
+                    </button>
+                </div>
+                <div style="height: 50px;"></div>
+            </div>
+          </div>
         </div>
     </div>
 
