@@ -46,7 +46,7 @@
         </div>
         
         <div style="height: 100px;"></div>
-        <input type="file" id="file-input-home" accept=".js, .py, text/javascript, text/python" style="display: none;">
+        <input type="file" id="file-input-home" accept=".js, .py, .ts, .cpp, text/javascript, text/python, application/typescript" style="display: none;">
 
         <div class="mac-window">
             <div class="top-bar">
@@ -74,11 +74,11 @@
             <!-- Buttons specific to typing view can go here if needed, or remove this bar -->
              <!-- go back to home -->
 
-             <button class="custom-button" style="background-color: #3d946a; height: 60px; width: 150px; border-color: #006835;" id="back-button" title="Go back to home">
+             <button class="custom-button" style="height: 60px; width: 150px;" id="back-button" title="Go back to home">
                 <img src="home.svg" class="icon" alt="icon" style="filter: invert(1); width: 30px; height: 30px;">
-                <span class="text" style="color: #f9fbf7; font-size: 25px;">Home</span>
+                <span class="text" style="font-size: 25px;">Home</span>
               </button>
-            <button id="diff-button" title="Highlight first difference" style="background: url('check_diff.png') no-repeat center; background-size: contain; width: 300px; height: 60px; cursor: pointer; text-indent: -9999px; overflow: hidden; border: none; outline: none; padding: 0; margin: 0;"></button>
+            <!-- <button id="diff-button" title="Highlight first difference" style="background: url('check_diff.png') no-repeat center; background-size: contain; width: 300px; height: 60px; cursor: pointer; text-indent: -9999px; overflow: hidden; border: none; outline: none; padding: 0; margin: 0;"></button> -->
             <span id="file-info" style="margin-left: 10px; font-style: italic; color: #555; flex-grow: 1; text-align: right;"></span>
         </div>
 
@@ -97,6 +97,7 @@
         </div>
 
         <div id="error-message"></div>
+        <p class="shortcut-hint">Press Ctrl/⌘ + S to see the first mistake</p> 
         <!-- End of moved content -->
     </div>
 
@@ -116,7 +117,7 @@
                 <div id="result-stats">
                     <p style="font-size: 40px; text-align: center;">WPM: <span id="result-wpm">--</span></p>
                     <p style="font-size: 40px; text-align: center;">Time: <span id="result-time">--</span> seconds</p>
-                    <p style="font-size: 40px; text-align: center;">Womp Womp</p>
+                    <!-- <p style="font-size: 40px; text-align: center;">Womp Womp</p> -->
                 </div>
                 <div style="display: flex; justify-content: center; gap: 20px;">
                     <button class="custom-button" id="new-snippet-button" style="width: 200px; height: 70px;">

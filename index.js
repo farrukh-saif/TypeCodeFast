@@ -1,7 +1,7 @@
 import { codeToHtml } from 'https://esm.sh/shiki@1.3.0';
 
 // --- Configuration & State ---
-const MAX_SNIPPET_LINES = 15;
+const MAX_SNIPPET_LINES = 10;
 const CHARS_PER_WORD = 5;
 const SHIKI_THEME = 'github-dark';
 let currentLanguage = 'javascript'; // Default, update based on upload later if needed
@@ -28,7 +28,7 @@ const typingAreaElement = document.getElementById('typing-area');
 const errorMessageElement = document.getElementById('error-message');
 const fileInfoSpan = document.getElementById('file-info');
 const highlightedInputContainer = document.getElementById('highlighted-input-container');
-const diffButton = document.getElementById('diff-button');
+// const diffButton = document.getElementById('diff-button');
 const backButton = document.getElementById('back-button');
 // Result View
 const resultView = document.getElementById('result-view');
@@ -84,10 +84,24 @@ function getCharacterPosition(index) {
 }
 
 // --- Core Function: Format and Display Snippet (for Typing View) ---
-async function displaySnippet(code, sourceFileName = "Unknown") {
+async function displaySnippet(code, sourceFileName = "default.js") {
     currentCodeToFormat = code; // Store raw code for redo
     // Determine language (simple for now)
     currentLanguage = sourceFileName.toLowerCase().endsWith('.py') ? 'python' : 'javascript'; // Basic detection example
+    const lowerFileName = sourceFileName.toLowerCase();
+
+    if (lowerFileName.endsWith('.py')) {
+        currentLanguage = 'python';
+    } else if (lowerFileName.endsWith('.ts')) {
+        currentLanguage = 'typescript';
+    } else if (lowerFileName.endsWith('.cpp')) {
+        currentLanguage = 'cpp';
+    } else if (lowerFileName.endsWith('.c')) {
+        currentLanguage = 'c';
+    } else { // Default to javascript for .js or unknown
+        currentLanguage = 'javascript';
+    }
+
     console.log(`Displaying snippet from ${sourceFileName}, lang: ${currentLanguage}`);
 
     errorMessageElement.textContent = ''; errorMessageElement.classList.remove('success');
@@ -95,11 +109,8 @@ async function displaySnippet(code, sourceFileName = "Unknown") {
     snippetOutputHolder.innerHTML = `<pre class="shiki" style="background-color: #282c34;"><code>Formatting and highlighting...</code></pre>`;
 
     try {
-        const parser = currentLanguage === 'python' ? 'python' : 'babel'; // Choose prettier parser
-        const plugins = currentLanguage === 'python' ? [prettierPlugins.python] : prettierPlugins; // Choose plugin
-
         const lines = code.split('\n');
-        formattedCode = lines.slice(0, MAX_SNIPPET_LINES).join('\n');
+        formattedCode = lines.slice(0, MAX_SNIPPET_LINES).join('\n').trimEnd();
 
         // // Format with Prettier
         // const fullFormattedCode = prettier.format(code, {
@@ -209,7 +220,7 @@ fileInputHome.addEventListener('change', (event) => {
 
 
 // Typing View: Diff Button
-diffButton.addEventListener('click', checkDifference);
+// diffButton.addEventListener('click', checkDifference);
 
 // Typing View: Back Button
 backButton.addEventListener('click', () => {
@@ -221,18 +232,20 @@ backButton.addEventListener('click', () => {
 
 // Typing View: Input Listener
 typingAreaElement.addEventListener('input', async () => {
-    const typedText = typingAreaElement.value;
+    // Trim trailing whitespace from user input before comparing
+    const typedText = typingAreaElement.value.trimEnd(); 
+    const originalTypedText = typingAreaElement.value; // Keep original for highlighting
 
     // Start Timer
-    if (!timerRunning && typedText.length > 0) { /* ... */ startTime = Date.now(); timerRunning = true; console.log("Timer started!"); errorMessageElement.textContent = ''; errorMessageElement.classList.remove('success'); document.querySelectorAll('.char-flash-overlay').forEach(el => el.remove()); }
+    if (!timerRunning && originalTypedText.length > 0) { /* ... */ startTime = Date.now(); timerRunning = true; console.log("Timer started!"); errorMessageElement.textContent = ''; errorMessageElement.classList.remove('success'); document.querySelectorAll('.char-flash-overlay').forEach(el => el.remove()); }
 
-    // Highlight
+    // Highlight using the original text with potential trailing spaces
         try {
-            const highlightedHtml = await codeToHtml(typedText, { lang: currentLanguage, theme: SHIKI_THEME });
+            const highlightedHtml = await codeToHtml(originalTypedText, { lang: currentLanguage, theme: SHIKI_THEME });
             inputOutputHolder.innerHTML = highlightedHtml;
         } catch (error) { /* ... fallback ... */ }
 
-    // Check Completion
+    // Check Completion using the trimmed text
     if (timerRunning && typedText === formattedCode) {
         const endTime = Date.now();
         timerRunning = false; // Stop timer first
@@ -241,7 +254,8 @@ typingAreaElement.addEventListener('input', async () => {
 
         let wpm = 0;
         if (durationMinutes > 0) {
-            const wordCount = formattedCode.length / CHARS_PER_WORD;
+            // Use the length of the formatted code (which is also trimmed) for WPM
+            const wordCount = formattedCode.length / CHARS_PER_WORD; 
             wpm = Math.round(wordCount / durationMinutes);
         }
 
@@ -304,25 +318,40 @@ typingAreaElement.addEventListener('paste', (e) => { e.preventDefault();
 // Typing View: Diff Check Function
 function checkDifference() {
         errorMessageElement.textContent = ''; errorMessageElement.classList.remove('success'); document.querySelectorAll('.char-flash-overlay').forEach(el => el.remove());
-        const typedText = typingAreaElement.value; let diffIndex = -1; const len = Math.min(typedText.length, formattedCode.length);
+        // Also trim the user's input here before comparison
+        const typedText = typingAreaElement.value.trimEnd(); 
+        let diffIndex = -1; 
+        // Compare against the already trimmed formattedCode
+        const len = Math.min(typedText.length, formattedCode.length); 
         for (let i = 0; i < len; i++) { if (typedText[i] !== formattedCode[i]) { diffIndex = i; break; } }
-        if (diffIndex === -1 && typedText.length !== formattedCode.length) { diffIndex = len; }
+        
+        // If no character difference found, check length difference based on trimmed versions
+        if (diffIndex === -1 && typedText.length !== formattedCode.length) { 
+            diffIndex = len; 
+        }
+        
         if (diffIndex !== -1) {
-            typingAreaElement.selectionStart = diffIndex; typingAreaElement.selectionEnd = diffIndex; typingAreaElement.focus();
+            // Focus and show error at the calculated index
+            typingAreaElement.selectionStart = diffIndex; 
+            typingAreaElement.selectionEnd = diffIndex; 
+            typingAreaElement.focus();
             try {
-                const pos = getCharacterPosition(diffIndex);
+                // Calculate position based on the original (non-trimmed) value's index
+                const pos = getCharacterPosition(diffIndex); 
                 const flashElement = document.createElement('div');
                 flashElement.className = 'char-flash-overlay';
                 flashElement.style.width = `${charWidth || 8}px`;
                 flashElement.style.height = `${lineHeight || 18}px`;
-                // Position the overlay relative to the container
                 flashElement.style.top = `${pos.top}px`;
                 flashElement.style.left = `${pos.left}px`;
-                // Append to the main container which holds the textarea
-                highlightedInputContainer.appendChild(flashElement); // Append to the overall container
+                highlightedInputContainer.appendChild(flashElement); 
                 setTimeout(() => { flashElement.style.opacity = '0'; setTimeout(() => flashElement.remove(), 500); }, 500);
             } catch (calcError) { console.error("Could not calculate character position for flash:", calcError); errorMessageElement.textContent = `Difference found near index ${diffIndex}.`; setTimeout(() => { errorMessageElement.textContent = ''; }, 1500); }
-        } else { errorMessageElement.textContent = 'No difference found!'; errorMessageElement.classList.add('success'); typingAreaElement.focus(); }
+        } else { 
+            errorMessageElement.textContent = 'No difference found!'; 
+            errorMessageElement.classList.add('success'); 
+            typingAreaElement.focus(); 
+        }
     }
 
 // Result View: Redo Button
