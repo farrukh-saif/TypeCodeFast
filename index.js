@@ -1,4 +1,5 @@
 import { codeToHtml } from 'https://esm.sh/shiki@1.3.0';
+import { inject } from "/node_modules/@vercel/analytics/dist/index.mjs"
 
 // --- Configuration & State ---
 const MAX_SNIPPET_LINES = 10;
@@ -382,15 +383,16 @@ window.addEventListener('keydown', (e) => {
 
 // --- Initial Load ---
 document.addEventListener('DOMContentLoaded', async () => {
-        if (typeof prettier !== 'undefined') {
-            measureCharMetrics(); // Measure metrics once
-            // Show home view initially
-            showView('home-view');
-            // No need to load default snippet automatically anymore
-            // await displaySnippet(defaultOriginalCode);
-        } else {
-            console.error("Prettier not loaded!");
-            errorMessageElement.textContent = "Error loading essential libraries.";
-            document.body.innerHTML = 'Error loading libraries. Please check the console.'; // Show critical error
-        }
+    inject();
+    if (typeof prettier !== 'undefined') {
+        measureCharMetrics(); // Measure metrics once
+        // Show home view initially
+        showView('home-view');
+        // No need to load default snippet automatically anymore
+        // await displaySnippet(defaultOriginalCode);
+    } else {
+        console.error("Prettier not loaded!");
+        errorMessageElement.textContent = "Error loading essential libraries.";
+        document.body.innerHTML = 'Error loading libraries. Please check the console.'; // Show critical error
+    }
 });
